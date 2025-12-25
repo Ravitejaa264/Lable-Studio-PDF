@@ -5,6 +5,7 @@ import { AreaMixin } from "../mixins/AreaMixin";
 import NormalizationMixin from "../mixins/Normalization";
 import RegionsMixin from "../mixins/Regions";
 import { RectRegionModel } from "./RectRegion";
+import { PdfRectRegionModel } from "./PdfRectRegion";
 import { KeyPointRegionModel } from "./KeyPointRegion";
 import { AudioRegionModel } from "./AudioRegion";
 import { PolygonRegionModel } from "./PolygonRegion";
@@ -91,6 +92,7 @@ const Area = types.union(
   TimelineRegionModel,
   TimeSeriesRegionModel,
   RectRegionModel,
+  PdfRectRegionModel,
   RichTextRegionModel,
   KeyPointRegionModel,
   EllipseRegionModel,

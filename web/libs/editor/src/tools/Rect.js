@@ -26,7 +26,7 @@ const _BaseNPointTool = types
 
         if (poly && poly.closed) return null;
         if (poly === undefined) return null;
-        if (poly && poly.type !== "rectangleregion") return null;
+        if (poly && poly.type !== "rectangleregion" && poly.type !== "pdfrectangleregion") return null;
 
         return poly;
       },
