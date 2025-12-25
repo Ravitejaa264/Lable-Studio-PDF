@@ -195,12 +195,15 @@ const _Annotation = types
     let root;
 
     const updateIds = (item) => {
+      if (!item) return item; // Guard against undefined items
       const children = item.children?.map(updateIds);
       const imageEntities = item.imageEntities?.map(updateIds);
+      const pageEntities = item.pageEntities?.map(updateIds);
       let updatedItem = item;
 
       if (children) updatedItem = { ...updatedItem, children };
       if (imageEntities) updatedItem = { ...updatedItem, imageEntities };
+      if (pageEntities) updatedItem = { ...updatedItem, pageEntities };
       if (updatedItem.id) updatedItem = { ...updatedItem, id: `${updatedItem.name ?? updatedItem.id}@${sn.id}` };
       // @todo fallback for tags with name as id:
       // if (item.name) item = { ...item, name: item.name + "@" + sn.id };

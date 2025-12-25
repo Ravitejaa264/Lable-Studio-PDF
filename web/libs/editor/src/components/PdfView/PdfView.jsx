@@ -528,26 +528,8 @@ export default observer(
         const pdf = await loadingTask.promise;
         const numPages = pdf.numPages;
 
-        // Create page entities for all pages if they don't exist
-        const idPostfix = item.annotation ? `@${item.annotation.id}` : "";
-        for (let i = 1; i <= numPages; i++) {
-          const existingEntity = item.findPageEntity(i);
-          if (!existingEntity) {
-            item.pageEntities.push({
-              id: `${item.name}#page${i}${idPostfix}`,
-              pageIndex: i,
-              pdfUrl: item.parsedValue,
-            });
-          } else {
-            // Update PDF document reference if entity exists
-            existingEntity.setPdfDocument(pdf);
-          }
-        }
-
-        // Set current page to first page if not set
-        if (item.pageEntities.length > 0 && !item.currentPageEntity) {
-          item.setCurrentPage(1);
-        }
+        // Create page entities using MST action (MobX-safe)
+        item.createPdfPageEntities(numPages, pdf);
       } catch (err) {
         console.error("Error loading PDF:", err);
         this.handleError();

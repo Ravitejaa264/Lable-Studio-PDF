@@ -7,6 +7,7 @@ import { customTypes } from "../../../core/CustomTypes";
 import Registry from "../../../core/Registry";
 import { AnnotationMixin } from "../../../mixins/AnnotationMixin";
 import { IsReadyWithDepsMixin } from "../../../mixins/IsReadyMixin";
+// Import PdfRectRegionModel - circular dependency handled via types.late() in regions array
 import { PdfRectRegionModel } from "../../../regions/PdfRectRegion";
 import * as Tools from "../../../tools";
 import ToolsManager from "../../../tools/Manager";
@@ -81,8 +82,10 @@ const Model = types
 
     mode: types.optional(types.enumeration(["drawing", "viewing"]), "viewing"),
 
-    // Temporarily disabled to diagnose MobX error - will restore after fix
-    regions: types.optional(types.array(types.frozen()), []),
+    regions: types.array(
+      types.late(() => types.union(PdfRectRegionModel)),
+      [],
+    ),
 
     drawingRegion: types.maybeNull(types.frozen()),
     selectionArea: types.maybeNull(types.frozen()),
@@ -298,7 +301,8 @@ const Model = types
 
     // Get regions for current page only
     get regs() {
-      return self.regions.filter((r) => r.pageIndex === self.currentPage);
+      if (!self.regions || self.regions.length === 0) return [];
+      return self.regions.filter((r) => r && r.pageIndex === self.currentPage);
     },
   }))
   .volatile((self) => ({
@@ -308,12 +312,38 @@ const Model = types
     const manager = ToolsManager.getInstance({ name: self.name });
     const env = { manager, control: self, object: self };
 
-    function createPdfPages() {
+    function createPdfPageEntities(numPages, pdfDocument) {
       if (!self.store.task || !self.parsedValue) return;
+      if (!numPages || numPages <= 0) return;
 
-      // This will be populated when PDF loads
-      // For now, just initialize with empty array
-      // Actual page creation happens in PdfView component
+      // Clear existing entities to prevent duplicates
+      self.pageEntities.clear();
+
+      const idPostfix = self.annotation ? `@${self.annotation.id}` : "";
+
+      for (let i = 1; i <= numPages; i++) {
+        let pageEntity = self.findPageEntity(i);
+        if (!pageEntity) {
+          const entity = {
+            id: `${self.name}#page${i}${idPostfix}`,
+            pageIndex: i,
+            pdfUrl: self.parsedValue,
+          };
+          self.pageEntities.push(entity);
+          // Get the newly created entity
+          pageEntity = self.findPageEntity(i);
+        }
+        
+        // Set PDF document reference if provided
+        if (pageEntity && pdfDocument) {
+          pageEntity.setPdfDocument(pdfDocument);
+        }
+      }
+
+      // Set current page to first page if not set
+      if (self.pageEntities.length > 0 && !self.currentPageEntity) {
+        self.setCurrentPage(1);
+      }
     }
 
     function afterAttach() {
@@ -324,7 +354,7 @@ const Model = types
       if (self.zoomcontrol) manager.addTool("ZoomPanTool", Tools.Zoom.create({}, env), "ZoomPanTool");
       if (self.rotatecontrol) manager.addTool("RotateTool", Tools.Rotate.create({}, env), "RotateTool");
 
-      createPdfPages();
+      // Page entities will be created when PDF loads in PdfView component
     }
 
     function afterResultCreated(region) {
@@ -638,6 +668,7 @@ const Model = types
       afterResultCreated,
       createDrawingRegion,
       deleteDrawingRegion,
+      createPdfPageEntities,
       setCurrentPage,
       setZoom,
       setZoomPosition,
