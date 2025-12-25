@@ -81,7 +81,8 @@ const Model = types
 
     mode: types.optional(types.enumeration(["drawing", "viewing"]), "viewing"),
 
-    regions: types.array(types.union(PdfRectRegionModel), []),
+    // Temporarily disabled to diagnose MobX error - will restore after fix
+    regions: types.optional(types.array(types.frozen()), []),
 
     drawingRegion: types.maybeNull(types.frozen()),
     selectionArea: types.maybeNull(types.frozen()),
